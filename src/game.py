@@ -28,8 +28,8 @@ class SnakeGame:
 
     def _place_food(self):
         while True:
-            x = random.randint(0, (self.width-10)//10) * 10
-            y = random.randint(0, (self.height-10)//10) * 10
+            x = random.randint(0, (self.width-20)//20) * 20
+            y = random.randint(0, (self.height-20)//20) * 20
             if [x,y] not in self.snake:
                 return [x, y]
 
