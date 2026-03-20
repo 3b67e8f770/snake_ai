@@ -34,6 +34,9 @@ class SnakeGame:
                 return [x, y]
 
     def step(self, action):
+        self.game_over = False
+        reward = 0 # beginning AI reward
+
         #Human or bot action
         if action in self.DIRECTIONS:
             self.direction = action
@@ -43,10 +46,11 @@ class SnakeGame:
         move = self.DIRECTIONS[self.direction]
         new_head = [curr_head[0]+move[0],curr_head[1]+move[1]]
 
-        
-        if new_head in self.snake or new_head[0] < 0 or new_head[1] < 0 or new_head[0] >= self.width or new_head[1] >= self.height:
+        #collisions 
+        if self._is_coliision(new_head):
             self.game_over = True
-            return self.game_over, self.score
+            reward = -20
+            return reward, self.game_over, self.score
 
         # move
         self.snake.appendleft(new_head)
@@ -54,8 +58,41 @@ class SnakeGame:
         # food catched?
         if new_head == self.food:
             self.score += 1
+            reward = 10 
             self.food = self._place_food()
         else:
             self.snake.pop()
+            reward = -0.1 #so snake will try to catch food asap
         
-        return self.game_over, self.score
+        return reward, self.game_over, self.score
+    
+    def _is_collision(self, pt):
+        if (pt[0]<0 or pt[0]>= self.width or
+            pt[1]<0 or pt[1]>= self.width or pt in list(self.snake)):
+            return True
+        return False
+    
+    def get_simple_ai_move(game):
+        head = game.snake[0]
+        food = game.food
+    
+        # try to get food
+        if food[0] > head[0]: return 'RIGHT'
+        if food[0] < head[0]: return 'LEFT'
+        if food[1] > head[1]: return 'DOWN'
+        if food[1] < head[1]: return 'UP'
+        return game.direction
+    
+    #def checkin_par(self,new_head, direction,):
+     #   possibile_move = [new_head + direction, new_head + RIGHT, new_head + LEFT]
+     #   denger = []
+      #  where_food = []
+      #  for single_move in possibile_move:
+      #      if single_move in self.snake or new_head[0] < 0 or new_head[1] < 0 or new_head[0] >= self.width or new_head[1] >= self.height:
+       #         denger.append(1)
+       #     else:
+      #          denger.append(0)
+
+        
+
+            
