@@ -1,6 +1,7 @@
 #! /usr/bin/python
 import random
 from collections import deque
+import numpy as np
 
 
 class SnakeGame:
@@ -35,48 +36,65 @@ class SnakeGame:
 
     def step(self, action):
         self.game_over = False
-        reward = 0 # beginning AI reward
+        reward = 0
 
-        #Human or bot action
-        if action in self.DIRECTIONS:
-            self.direction = action
+        # clock wise cirection
+        clock_wise = ['UP', 'RIGHT', 'DOWN', 'LEFT']
+        idx = clock_wise.index(self.direction)
 
-        #new head
+        if np.array_equal(action, [1, 0, 0]):
+            new_dir = clock_wise[idx] # Bez zmian
+        elif np.array_equal(action, [0, 1, 0]):
+            next_idx = (idx + 1) % 4
+            new_dir = clock_wise[next_idx] # Skręt w prawo (CW)
+        else: # [0, 0, 1]
+            next_idx = (idx - 1) % 4
+            new_dir = clock_wise[next_idx] # Skręt w lewo (CCW)
+        
+        self.direction = new_dir
+
+        # cant't turn back
+        #opposites = {'UP': 'DOWN', 'DOWN': 'UP', 'LEFT': 'RIGHT', 'RIGHT': 'LEFT'}
+        #if action in self.DIRECTIONS and action != opposites.get(self.direction):
+            #self.direction = action
+
+        # MOve
         curr_head = self.snake[0]
         move = self.DIRECTIONS[self.direction]
-        new_head = [curr_head[0]+move[0],curr_head[1]+move[1]]
+        new_head = [curr_head[0] + move[0], curr_head[1] + move[1]]
 
-        #collisions 
-        if self._is_coliision(new_head):
+        # collision? 
+        if self._is_collision(new_head):
             self.game_over = True
             reward = -20
             return reward, self.game_over, self.score
-
-        # move
+        
+        # new head
         self.snake.appendleft(new_head)
 
-        # food catched?
+        # food ate?
         if new_head == self.food:
             self.score += 1
             reward = 10 
             self.food = self._place_food()
         else:
             self.snake.pop()
-            reward = -0.1 #so snake will try to catch food asap
+            reward = -0.01
         
         return reward, self.game_over, self.score
     
     def _is_collision(self, pt):
-        if (pt[0]<0 or pt[0]>= self.width or
-            pt[1]<0 or pt[1]>= self.width or pt in list(self.snake)):
+        if (pt[0] < 0 or pt[0] >= self.width or
+            pt[1] < 0 or pt[1] >= self.height or 
+            pt in list(self.snake)):
             return True
         return False
-    
+
+    @staticmethod
     def get_simple_ai_move(game):
         head = game.snake[0]
         food = game.food
-    
-        # try to get food
+        # easy  AI
         if food[0] > head[0]: return 'RIGHT'
         if food[0] < head[0]: return 'LEFT'
         if food[1] > head[1]: return 'DOWN'
