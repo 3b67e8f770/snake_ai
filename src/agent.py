@@ -1,9 +1,26 @@
 #!/usr/bin/python3
 import torch
+import random
 import numpy as np
+from collections import deque
 from game import SnakeGame
+from model import Linear_QNet, QTrainer
 
-class Afgent:
+MAX_MEMORY = 100_000 # LAst moves
+BATCH_SIZE = 1000 # LAst games
+LR= 0.001 # LEarning speed
+
+class Agent:
+    def __init__(self):
+        self.n_games = 0
+        self.epsilon = 0 # random
+        self.gamma = 0.9 # rewards
+        self.memory = deque(maxlen=MAX_MEMORY)
+
+        # Neuron 11 in, 3 out
+        self.model = Linear_QNet(11,256,3)
+        self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
+
     def get_state(self, game):
         head = game.snake[0]
 
@@ -42,5 +59,40 @@ class Afgent:
             game.food[1] > head[1]  #food down
         ]
         return np.array(state, dtype=int)
+
+    def remember(self, state, action, reward, next_state, done):
+        # "I'm still alive" to memory
+        self.memory.append((state, action, reward, next_state, done))
+
+    def train_long_memory(self):
+        #summarizing at the end
+        if len(self.memory) > BATCH_SIZE:
+            mini_sample = random.sample(self.memory, BATCH_SIZE)
+        else:
+            mini_sample = self.memory
+            
+        states, actions, rewards, next_states, dones = zip(*mini_sample)
+        self.trainer.train_step(states, actions, rewards, next_states, dones)
+
+    def train_short_memory(self, state, action, reward, next_state, done):
+        #step by step learning
+        self.trainer.train_step(state, action, reward, next_state, done)
+
+    def get_action(self, state):
+        # how random the move is
+        self.epsilon = 80 - self.n_games
+        final_move = [0, 0, 0]
+
+        #random move
+        if random.randint(0,200) < self.epsilon:
+            move = random.randint(0,2)
+            final_move[move] = 1
+        else: # smart move
+            state0 = torch.tensor(state, dtype=torch.float)
+            prediction = self.model(state0) # calculate what to do
+            move = torch.argmax(prediction).item()  # pick max
+            final_move[move] = 1
+    
+        return final_move # np.array(state, dtype=int)
         
 

@@ -4,73 +4,80 @@ import numpy as np
 from game import SnakeGame
 from agent import Agent
 
-#Init
-pygame.init()
-game = SnakeGame()
-agent = Agent() #bot 
-screen = pygame.display.set_mode((640,480)) # size
-clock = pygame.time.Clock()  # game speed
-running = True
-ai_mode = False # Human is starting
 
-while running:
-    action = [1,0,0]
-    user_direction = None 
-
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-        
-        if event.type == pygame.KEYDOWN: 
-            # Toggle AI
-            if event.key == pygame.K_m:
-                ai_mode = not ai_mode
-                print(f'Tryb AI: {ai_mode}')
-
-            # manual
-            if not ai_mode:
-                if event.key == pygame.K_UP: action = 'UP'
-                elif event.key == pygame.K_DOWN: action = 'DOWN'
-                elif event.key == pygame.K_LEFT: action = 'LEFT'
-                elif event.key == pygame.K_RIGHT: action = 'RIGHT'
-
-    if not ai_mode and user_direction:
-        clock_wise = ['UP', 'RIGHT', 'DOWN', 'LEFT']
-        idx = clock_wise.index(game.direction) # curr direction
-
-        if user_direction == clock_wise[(idx + 1) % 4]:
-            action = [0, 1, 0] # right
-        elif user_direction == clock_wise[(idx - 1) % 4]:
-            action = [0, 0, 1] # left
-        else:
-            action = [1, 0, 0] # forward
-
-    #  AI
-    if ai_mode:
-        state = agent.get_state(game)
-        action = [1,0,0]
+def train():
+    #Init
+    pygame.init()
+    game = SnakeGame()
+    agent = Agent() #bot 
+    screen = pygame.display.set_mode((640,480)) # size
+    clock = pygame.time.Clock()  # game speed
     
-    #next iter
-    reward, game_over, score = game.step(action)
+    running = True
+    ai_mode = False # Human is starting
+    user_direction = None
 
-    if game_over:
-        print(f'Game over! Score: {score}')
-        game.reset() # restart
-        # running = False # Opcjonalnie, jeśli wolisz zamknąć okno
+    print("Let's the lerning begin use 'm' to")
 
-    # screen rendering
-    screen.fill((255,255,255)) # white
+    while running: 
+        state_old = agent.get_state(game) # curent state
+        
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+        
+            if event.type == pygame.KEYDOWN: 
+                # Toggle AI
+                if event.key == pygame.K_m:
+                    ai_mode = not ai_mode
+                    print(f'Tryb AI: {ai_mode}')
 
-    # snake rendering
-    for seg in game.snake:
-        pygame.draw.rect(screen, (128, 128, 128), (seg[0], seg[1], 20, 20))
+                # manual
+                if not ai_mode:
+                    if event.key == pygame.K_UP: user_direction = 'UP'
+                    elif event.key == pygame.K_DOWN: user_direction = 'DOWN'
+                    elif event.key == pygame.K_LEFT: user_direction = 'LEFT'
+                    elif event.key == pygame.K_RIGHT: user_direction = 'RIGHT'
 
-    #food rendering
-    pygame.draw.rect(screen, (0, 0, 0), (game.food[0], game.food[1], 20, 20))
+        if ai_mode:
+            final_move = agent.get_action(state_old)
+        else:
+            clock_wise = ['UP', 'RIGHT', 'DOWN', 'LEFT']
+            idx = clock_wise.index(game.direction) # curr direction
 
-    pygame.display.flip()
-    clock.tick(20) # per second
-pygame.quit()
+            if user_direction == clock_wise[(idx + 1) % 4]:
+                final_move = [0, 1, 0] # right
+            elif user_direction == clock_wise[(idx - 1) % 4]:
+                final_move = [0, 0, 1] # left
+            else:
+                final_move = [1, 0, 0] # forward
+        reward, done, score = game.step(final_move) # do
+        state_new = agent.get_state(game) # check
+        agent.train_short_memory(state_old, final_move, reward, state_new, done) # train
+        agent.remember(state_old, final_move, reward, state_new, done)
+
+        if done:
+            game.reset()
+            agent.n_games += 1
+            #the real learning
+            agent.train_long_memory()
+            print(f'Attempt #{agent.n_games} reached score: {score}, With EPsilon {agent.epsilon}.')
+        
+
+        # screen rendering
+        screen.fill((255,255,255)) # white
+
+        # snake rendering
+        for seg in game.snake:
+            pygame.draw.rect(screen, (128, 128, 128), (seg[0], seg[1], 20, 20))
+
+        #food rendering
+        pygame.draw.rect(screen, (0, 0, 0), (game.food[0], game.food[1], 20, 20))
+
+        pygame.display.flip()
+        clock.tick(100) # per second
+    pygame.quit()
 
 
-
+if __name__ == "__main__":
+    train()
