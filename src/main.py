@@ -11,7 +11,7 @@ def save_stats(game_num, score, epsilon):
 
     if not os.path.exists(file_path):
         with open(file_path, 'a', newline="") as f:
-            writer = csv.write(f)
+            writer = csv.writer(f)
             writer.writerow(['Game', 'Score', epsilon])
     
     with open(file_path, 'a', newline="") as f:
