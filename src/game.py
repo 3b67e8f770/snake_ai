@@ -35,10 +35,20 @@ class SnakeGame:
             y = random.randint(0, (self.height-20)//20) * 20
             if [x,y] not in self.snake:
                 return [x, y]
+    
+    def is_path_blocked_by_tail(self, head, food):
+        # area between head and food
+        min_x, max_x = min(head[0], food[0]), max(head[0], food[0])
+        min_y, max_y = min(head[1], food[1]), max(head[1], food[1])
+
+        # counting a risk
 
     def step(self, action):
         self.game_over = False
         reward = 0
+
+        head_old = self.snake[0]
+        dist_old = np.sqrt((head_old[0] - self.food[0])**2 + (head_old[1] - self.food[1])**2)
 
         # clock wise cirection
         idx = self.CLOCK_WISE.index(self.direction)
@@ -67,8 +77,7 @@ class SnakeGame:
         # collision? 
         if self._is_collision(new_head):
             self.game_over = True
-            reward = -20
-            return reward, self.game_over, self.score
+            return -20, self.game_over, self.score
         
         # new head
         self.snake.appendleft(new_head)
@@ -76,12 +85,21 @@ class SnakeGame:
         # food ate?
         if new_head == self.food:
             self.score += 1
-            reward = 25 
             self.food = self._place_food()
+            reward = 25
+            
         else:
             self.snake.pop()
-            reward = -0.05
-        
+            
+            # Am I closer?
+            dist_new = np.sqrt((new_head[0] - self.food[0])**2 + (new_head[1] - self.food[1])**2)
+
+            if dist_new < dist_old: # closer
+                self.occupancy = self.get_square_occupancy(new_head, self.food)
+                reward = 0.2 * self.occupancy
+            else:
+                reward = -0.2 #further
+
         return reward, self.game_over, self.score
     
     def _is_collision(self, pt):
@@ -90,6 +108,8 @@ class SnakeGame:
             pt in list(self.snake)):
             return True
         return False
+    
+
     
     def get_relative_move_to(self, target_dir):
         #human to computer
@@ -113,6 +133,24 @@ class SnakeGame:
         if food[1] > head[1]: return 'DOWN'
         if food[1] < head[1]: return 'UP'
         return game.direction
+    
+    def get_square_occupancy(self, head, food):
+        # 20px is our square by default
+        x_range = range(min(head[0], food[0]), max(head[0], food[0]) + 20, 20)
+        y_range = range(min(head[1], food[1]), max(head[1], food[1]) + 20, 20)
+
+        area = len(x_range) * len(y_range)
+        if area <= 1: return 0.5 # food is next to the head
+
+        total_weight = 0
+        snake_len = len(self.snake)
+
+        for i, segment in enumerate(self.snake):
+            if segment[0] in x_range and segment[1] in y_range:
+                weight = 1.0 - (i/snake_len)*0.9
+                total_weight += weight
+        
+        return ((total_weight / area) *(-1) + 0.5) 
     
     #def checkin_par(self,new_head, direction,):
      #   possibile_move = [new_head + direction, new_head + RIGHT, new_head + LEFT]
