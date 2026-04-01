@@ -6,6 +6,8 @@ from agent import Agent
 
 
 def train():
+
+    speed = 75
     #Init
     pygame.init()
     game = SnakeGame()
@@ -14,12 +16,13 @@ def train():
     clock = pygame.time.Clock()  # game speed
     
     running = True
-    ai_mode = False # Human is starting
+    ai_mode = True 
     user_direction = None
 
     print("Let's the lerning begin use 'm' to")
 
     while running: 
+        
         state_old = agent.get_state(game) # curent state
         
         for event in pygame.event.get():
@@ -31,6 +34,14 @@ def train():
                 if event.key == pygame.K_m:
                     ai_mode = not ai_mode
                     print(f'Tryb AI: {ai_mode}')
+                # speed +
+                if event.key == pygame.K_KP_PLUS:
+                    speed  *= 2
+                    print(f'Now the speed is {speed}')
+                # speed -   
+                if event.key == pygame.K_KP_MINUS and speed >= 2:
+                    speed = int(speed/2)
+                    print(f'Now the speed is {speed}')
 
                 # manual
                 if not ai_mode:
@@ -40,7 +51,7 @@ def train():
                     elif event.key == pygame.K_RIGHT: user_direction = 'RIGHT'
 
         if ai_mode:
-            final_move = agent.get_action(state_old)
+            final_move = agent.get_action(state_old, game)
         else:
             clock_wise = ['UP', 'RIGHT', 'DOWN', 'LEFT']
             idx = clock_wise.index(game.direction) # curr direction
@@ -62,6 +73,11 @@ def train():
             #the real learning
             agent.train_long_memory()
             print(f'Attempt #{agent.n_games} reached score: {score}, With EPsilon {agent.epsilon}.')
+
+        if score > agent.record:
+            agent.record = score
+            agent.model.save()
+            print("New record! Model saved")
         
 
         # screen rendering
@@ -75,7 +91,7 @@ def train():
         pygame.draw.rect(screen, (0, 0, 0), (game.food[0], game.food[1], 20, 20))
 
         pygame.display.flip()
-        clock.tick(100) # per second
+        clock.tick(speed) # per second
     pygame.quit()
 
 

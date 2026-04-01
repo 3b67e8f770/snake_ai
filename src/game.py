@@ -13,6 +13,8 @@ class SnakeGame:
         'UP'   : (0, -20),
         'DOWN' : (0, 20)
     }
+    CLOCK_WISE = ['UP', 'RIGHT', 'DOWN', 'LEFT']
+        
  
     def __init__(self, width=640, height=480):
         self.width = width
@@ -39,17 +41,16 @@ class SnakeGame:
         reward = 0
 
         # clock wise cirection
-        clock_wise = ['UP', 'RIGHT', 'DOWN', 'LEFT']
-        idx = clock_wise.index(self.direction)
+        idx = self.CLOCK_WISE.index(self.direction)
 
         if np.array_equal(action, [1, 0, 0]):
-            new_dir = clock_wise[idx] # Bez zmian
+            new_dir = self.CLOCK_WISE[idx] # Bez zmian
         elif np.array_equal(action, [0, 1, 0]):
             next_idx = (idx + 1) % 4
-            new_dir = clock_wise[next_idx] # Skręt w prawo (CW)
+            new_dir = self.CLOCK_WISE[next_idx] # Skręt w prawo (CW)
         else: # [0, 0, 1]
             next_idx = (idx - 1) % 4
-            new_dir = clock_wise[next_idx] # Skręt w lewo (CCW)
+            new_dir = self.CLOCK_WISE[next_idx] # Skręt w lewo (CCW)
         
         self.direction = new_dir
 
@@ -75,11 +76,11 @@ class SnakeGame:
         # food ate?
         if new_head == self.food:
             self.score += 1
-            reward = 10 
+            reward = 25 
             self.food = self._place_food()
         else:
             self.snake.pop()
-            reward = -0.01
+            reward = -0.05
         
         return reward, self.game_over, self.score
     
@@ -89,6 +90,18 @@ class SnakeGame:
             pt in list(self.snake)):
             return True
         return False
+    
+    def get_relative_move_to(self, target_dir):
+        #human to computer
+        # clock wise cirection
+
+        curr_idx = self.CLOCK_WISE.index(self.direction)
+        target_idx = self.CLOCK_WISE.index(target_dir)
+
+        diff = (target_idx - curr_idx) % 4
+        if diff == 3 : return 2 # left
+        if diff == 1 : return 1 # right
+        return 0 # fwd 
 
     @staticmethod
     def get_simple_ai_move(game):

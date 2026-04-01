@@ -11,6 +11,8 @@ BATCH_SIZE = 1000 # LAst games
 LR= 0.001 # LEarning speed
 
 class Agent:
+    self.record = 0
+    
     def __init__(self):
         self.n_games = 0
         self.epsilon = 0 # random
@@ -78,14 +80,15 @@ class Agent:
         #step by step learning
         self.trainer.train_step(state, action, reward, next_state, done)
 
-    def get_action(self, state):
+    def get_action(self, state, game):
         # how random the move is
-        self.epsilon = 80 - self.n_games
+        self.epsilon = 160 - self.n_games
         final_move = [0, 0, 0]
 
         #random move
-        if random.randint(0,200) < self.epsilon:
-            move = random.randint(0,2)
+        if random.randint(0,400) < self.epsilon:
+            target_dir = game.get_simple_ai_move(game)
+            move = game.get_relative_move_to(target_dir)
             final_move[move] = 1
         else: # smart move
             state0 = torch.tensor(state, dtype=torch.float)
@@ -95,4 +98,5 @@ class Agent:
     
         return final_move # np.array(state, dtype=int)
         
+
 
