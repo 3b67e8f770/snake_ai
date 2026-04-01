@@ -3,7 +3,20 @@ import pygame
 import numpy as np
 from game import SnakeGame
 from agent import Agent
+import csv
+import os
 
+def save_stats(game_num, score, epsilon):
+    file_path = 'stats.csv'
+
+    if not os.path.exists(file_path):
+        with open(file_path, 'a', newline="") as f:
+            writer = csv.write(f)
+            writer.writerow(['Game', 'Score', epsilon])
+    
+    with open(file_path, 'a', newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow([game_num, score, epsilon])
 
 def train():
 
@@ -72,6 +85,8 @@ def train():
             agent.n_games += 1
             #the real learning
             agent.train_long_memory()
+
+            save_stats(agent.n_games, score, agent.epsilon)
             print(f'Attempt #{agent.n_games} reached score: {score}, With EPsilon {agent.epsilon}.')
 
         if score > agent.record:

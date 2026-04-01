@@ -11,9 +11,9 @@ BATCH_SIZE = 1000 # LAst games
 LR= 0.001 # LEarning speed
 
 class Agent:
-    self.record = 0
-    
+
     def __init__(self):
+        self.record = 0
         self.n_games = 0
         self.epsilon = 0 # random
         self.gamma = 0.9 # rewards
