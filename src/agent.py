@@ -5,6 +5,7 @@ import numpy as np
 from collections import deque
 from game import SnakeGame
 from model import Linear_QNet, QTrainer
+import os
 
 MAX_MEMORY = 100_000 # LAst moves
 BATCH_SIZE = 1000 # LAst games
@@ -22,6 +23,12 @@ class Agent:
         # Neuron 11 in, 3 out
         self.model = Linear_QNet(11,256,3)
         self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
+
+        model_path = './model/model.pth'
+        if os.path.exists(model_path):
+            self.model.load_state_dict(torch.load(model_path))
+            self.model.eval()
+            print("previous learning loaded")
 
     def get_state(self, game):
         head = game.snake[0]
@@ -82,7 +89,10 @@ class Agent:
 
     def get_action(self, state, game):
         # how random the move is
-        self.epsilon = 160 - self.n_games
+        if self.n_games > 140:
+            self.epsilon *=0.95
+        else:
+            self.epsilon = 160 - self.n_games
         final_move = [0, 0, 0]
 
         #random move

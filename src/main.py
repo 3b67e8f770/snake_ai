@@ -87,7 +87,7 @@ def train():
             agent.train_long_memory()
 
             save_stats(agent.n_games, score, agent.epsilon)
-            print(f'Attempt #{agent.n_games} reached score: {score}, With EPsilon {agent.epsilon}.')
+            print(f'Attempt #{agent.n_games} reached score: {score}, With Epsilon {agent.epsilon}.')
 
         if score > agent.record:
             agent.record = score

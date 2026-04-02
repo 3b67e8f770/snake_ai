@@ -1,5 +1,5 @@
 # 1 Python slim
-FROM python:3.10-slim
+FROM python:3.13-slim
 
 # 2. Pygame install (screen & sound)
 RUN apt-get update && apt-get install -y \
