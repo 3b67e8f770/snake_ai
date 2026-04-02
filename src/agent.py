@@ -6,6 +6,7 @@ from collections import deque
 from game import SnakeGame
 from model import Linear_QNet, QTrainer
 import os
+from game import Direction 
 
 MAX_MEMORY = 100_000 # LAst moves
 BATCH_SIZE = 1000 # LAst games
@@ -21,7 +22,7 @@ class Agent:
         self.memory = deque(maxlen=MAX_MEMORY)
 
         # Neuron 11 in, 3 out
-        self.model = Linear_QNet(11,256,3)
+        self.model = Linear_QNet(20,512,3)
         self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
 
         model_path = './model/model.pth'
@@ -33,41 +34,27 @@ class Agent:
     def get_state(self, game):
         head = game.snake[0]
 
-        #around the head
-        point_le = [head[0] - 20, head[1]]
-        point_ri = [head[0] + 20, head[1]]
-        point_up = [head[0], head[1] - 20]
-        point_do = [head[0], head[1] + 20]
+        #input directions
+        dir_x, dir_y = 0, 0
+        if game.direction == 'LEFT': dir_x = -1
+        elif game.direction == 'RIGHT': dir_x = 1
+        elif game.direction == 'UP': dir_y = 1
+        elif game.direction == 'DOWN': dir_y = -1
 
-        #forward, right, left
-        orientation_map = {
-            'UP':    (point_up, point_ri, point_le),
-            'DOWN':  (point_do, point_le, point_ri),
-            'LEFT':  (point_le, point_up, point_do),
-            'RIGHT': (point_ri, point_do, point_up)
-        }
+        # where is the food?
+        food_x = (game.food[0] - head[0]) / game.width
+        food_y = (game.food[1] - head[1]) / game.height
 
-        pt_fwd, pt_rig, pt_lef = orientation_map[game.direction]
+        # how far is the wall?
+        ray_dirs = [(0,-1), (1,-1), (1,0), (1,1), (0,1), (-1,1), (-1,0), (-1,-1)]
+        rays = [game.get_ray_dist(d) for d in ray_dirs]
 
-        state =[
-            #Danger
-            game._is_collision(pt_fwd),
-            game._is_collision(pt_rig),
-            game._is_collision(pt_lef),
+        # sectors occupancy
+        occupancy = game.get_occupancy_sectors()
 
-            # last move direction
-            game.direction == "LEFT",
-            game.direction == "RIGHT",
-            game.direction == "UP",
-            game.direction == "DOWN",
+        state = [dir_x, dir_y, food_x, food_y, *rays, *occupancy]
+        return np.array(state, dtype=float)
 
-            #where is the Food?
-            game.food[0] < head[0], #food on the left
-            game.food[0] > head[0], #food on the right
-            game.food[1] < head[1], #food up
-            game.food[1] > head[1]  #food down
-        ]
-        return np.array(state, dtype=int)
 
     def remember(self, state, action, reward, next_state, done):
         # "I'm still alive" to memory
@@ -89,10 +76,12 @@ class Agent:
 
     def get_action(self, state, game):
         # how random the move is
-        if self.n_games > 140:
-            self.epsilon *=0.95
+        if self.n_games > 380:
+            self.epsilon = round(self.epsilon * 0.995, 3)
+            if self.n_games > 1500:
+                self.n_games = 1
         else:
-            self.epsilon = 160 - self.n_games
+            self.epsilon = 400 - self.n_games
         final_move = [0, 0, 0]
 
         #random move

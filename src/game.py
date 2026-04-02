@@ -2,6 +2,13 @@
 import random
 from collections import deque
 import numpy as np
+import math
+
+class Direction:
+    RIGHT = 'RIGHT'
+    LEFT = 'LEFT'
+    UP = 'UP'
+    DOWN = 'DOWN'
 
 
 class SnakeGame:
@@ -15,11 +22,45 @@ class SnakeGame:
     }
     CLOCK_WISE = ['UP', 'RIGHT', 'DOWN', 'LEFT']
         
- 
     def __init__(self, width=640, height=480):
         self.width = width
         self.height = height
         self.reset()
+        self.head = self.snake[0]
+
+
+    def get_ray_dist(self, direction): # => 1/distans to danger
+        x , y = self.snake[0]
+        distance = 0
+        while True:
+            distance += 1
+            x += direction[0] * 20
+            y += direction[1] * 20
+            if self._is_collision([x,y]):
+                if distance == 0:
+                    return 1.0
+                return 1.0 /distance
+            if distance > 50 or distance > self.width//20 or distance > self.height//20: return 0.0
+
+    def get_occupancy_sectors(self):
+        sectors = [0.0] * 8
+        if len(self.snake) <= 1: return sectors
+
+        snake_len = len(self.snake)
+        for i, segment in enumerate(list(self.snake)[1:]):
+            dx = segment[0] - self.snake[0][0]
+            dy = segment[1] - self.snake[0][1]
+
+            angle = math.atan2(dy, dx) # in PI
+            if angle <0: angle += 2 * math.pi
+
+            sector_idx = int((angle / (2*math.pi)) * 8) % 8
+            weight = 1.0 - (i/snake_len) * 0.8
+            sectors[sector_idx] += weight
+
+            
+
+        return [min(s / 5.0, 1.0) for s in sectors]
 
     def reset(self):
         # beginning
@@ -69,7 +110,7 @@ class SnakeGame:
         #if action in self.DIRECTIONS and action != opposites.get(self.direction):
             #self.direction = action
 
-        # MOve
+        # Move
         curr_head = self.snake[0]
         move = self.DIRECTIONS[self.direction]
         new_head = [curr_head[0] + move[0], curr_head[1] + move[1]]
@@ -77,16 +118,17 @@ class SnakeGame:
         # collision? 
         if self._is_collision(new_head):
             self.game_over = True
-            return -20, self.game_over, self.score
+            return -100, self.game_over, self.score
         
         # new head
         self.snake.appendleft(new_head)
+        self.head = self.snake[0]
 
         # food ate?
         if new_head == self.food:
             self.score += 1
             self.food = self._place_food()
-            reward = 25
+            reward = 50
             
         else:
             self.snake.pop()

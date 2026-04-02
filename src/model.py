@@ -6,11 +6,15 @@ import torch.nn.functional as F
 import numpy as np
 import os
 
+# 8 how far is wall
+# 8 ways occupancy
+# 2 current direction (X, Y).
+# 2 where is the food
 
 class Linear_QNet(nn.Module):
-    def __init__(self, input_size, hidden_size, output_size):
+    def __init__(self, input_size=20, hidden_size=512, output_size=3):
         super().__init__()
-        # 11 input, 3 output
+        # 20 input, 3 output
         self.linear1 = nn.Linear(input_size, hidden_size)
         self.linear2 = nn.Linear(hidden_size, hidden_size)
         self.linear3 = nn.Linear(hidden_size, output_size)
